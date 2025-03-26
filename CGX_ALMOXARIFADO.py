@@ -2,6 +2,30 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 
+# ==============================
+# 🔐 AUTENTICAÇÃO BÁSICA (CGX / x)
+# ==============================
+def autenticar_usuario():
+    st.sidebar.title("🔐 Login - COGEX")
+    usuario = st.sidebar.text_input("Usuário")
+    senha = st.sidebar.text_input("Senha", type="password")
+
+    usuarios_validos = {
+        "CGX": "x"
+    }
+
+    if st.sidebar.button("Entrar"):
+        if usuario in usuarios_validos and senha == usuarios_validos[usuario]:
+            st.session_state["autenticado"] = True
+            st.session_state["usuario"] = usuario
+            st.experimental_rerun()
+        else:
+            st.sidebar.error("Usuário ou senha incorretos.")
+
+if "autenticado" not in st.session_state or not st.session_state["autenticado"]:
+    autenticar_usuario()
+    st.stop()
+
 # -------------------- CONFIGURAÇÕES INICIAIS --------------------
 st.set_page_config(page_title="COGEX Almoxarifado", layout="wide")
 
@@ -49,7 +73,6 @@ def gerar_pedido(dias_cobertura):
 
     pedido_df = pd.merge(items_df[['Item ID', 'Name', 'Description']], saldo.reset_index(), on='Item ID', how='left')
     pedido_df = pd.merge(pedido_df, consumo_medio.reset_index(), on='Item ID', how='left', suffixes=('_Estoque', '_Consumo'))
-
     pedido_df = pedido_df.fillna({'Amount_Estoque': 0, 'Amount_Consumo': 0})
 
     pedido_df['Consumo Médio Diário'] = pedido_df['Amount_Consumo']
@@ -80,7 +103,6 @@ if menu == "Pedido Automático de Material":
     st.download_button("📥 Baixar Pedido CSV", data=csv, file_name='COGEX_ALMOXARIFADO_PEDIDO_MATERIAL.csv', mime='text/csv')
 
     st.subheader("📊 Gráficos Estoque por Status")
-
     status_cores = {'🔴 Crítico': 'red', '🟡 Alerta': 'orange', '🟢 Ok': 'green'}
     for status, cor in status_cores.items():
         subset = pedido[pedido['Status'] == status]
